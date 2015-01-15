@@ -44,12 +44,14 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
         if ($Args['ParentType'] == 'discussion') {
             $DiscussionID = $Args['ParentID'];
         } elseif ($Args['ParentType'] == 'comment') {
-            // Simple model is sufficient here.
-            $CommentModel = new Gdn_Model('Comment');
-            $DiscussionID = $CommentModel->GetID($Args['ParentID'])->DiscussionID;
+            $DiscussionID = Gdn::SQL()
+                ->GetWhere('Comment', array('CommentID' => $Args['ParentID']))
+                ->FirstRow()
+                ->DiscussionID;
+				Gdn::Controller()->InformMessage(print_r($DiscussionID, true));
         } else return;
 
-        // Does this action change the count change for this item?
+        // Does this action change the reaction count for this item?
         if ($Args['Exists'] === false) {
             $IncDec = ' - 1';
         } elseif (!$this->CurrentReaction) {
