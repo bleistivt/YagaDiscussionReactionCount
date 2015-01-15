@@ -48,7 +48,6 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
                 ->GetWhere('Comment', array('CommentID' => $Args['ParentID']))
                 ->FirstRow()
                 ->DiscussionID;
-				Gdn::Controller()->InformMessage(print_r($DiscussionID, true));
         } else return;
 
         // Does this action change the reaction count for this item?
