@@ -1,4 +1,4 @@
-<?php if (!defined('APPLICATION')) exit();
+<?php
 
 $PluginInfo['YagaDiscussionReactionCount'] = array(
     'Name' => 'Yaga Discussion Reaction Count',
@@ -13,16 +13,16 @@ $PluginInfo['YagaDiscussionReactionCount'] = array(
 
 class YagaDiscussionReactionCount extends Gdn_Plugin {
 
-    private $CurrentReaction;
+    private $currentReaction;
 
     // If there are reactions, add the count to the DiscussionMeta everywhere.
-    public function Base_BeforeDiscussionMeta_Handler($Sender, $Args) {
-        $CountReactions = $Args['Discussion']->CountReactions;
+    public function base_beforeDiscussionMeta_handler($sender, $args) {
+        $countReactions = $args['Discussion']->CountReactions;
 
-        if (C('Yaga.Reactions.Enabled') && $CountReactions) {
-            $Number = BigPlural($CountReactions, T('%s reaction'));
-            echo Wrap(
-                sprintf(PluralTranslate($CountReactions, T('%s reaction'), T('%s reactions')), $Number),
+        if (C('Yaga.Reactions.Enabled') && $countReactions) {
+            $number = bigPlural($countReactions, T('%s reaction'));
+            echo wrap(
+                sprintf(pluralTranslate($countReactions, T('%s reaction'), T('%s reactions')), $number),
                 'span',
                 array('class' => 'MItem MCount ReactionCount')
             );
@@ -30,80 +30,80 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
     }
 
     // Hacky way to get the previous reaction to determine later if the count has to change.
-    public function ReactController_Initialize_Handler($Sender) {
-        $Args = explode('/', trim($Sender->SelfUrl, '/'));
-        if (count($Args) > 3) {
-            $Args = array_slice($Args, -3);
-            $this->CurrentReaction = $Sender->ReactionModel->GetByUser($Args[1], $Args[0], Gdn::Session()->UserID);
+    public function reactController_initialize_handler($sender) {
+        $args = explode('/', trim($sender->SelfUrl, '/'));
+        if (count($args) > 3) {
+            $args = array_slice($args, -3);
+            $this->currentReaction = $sender->ReactionModel->getByUser($args[1], $args[0], Gdn::session()->UserID);
         }
     }
 
     // Count when a reaction is saved.
-    public function ReactionModel_AfterReactionSave_Handler($Sender, $Args) {
-        $DiscussionID = false;
+    public function reactionModel_afterReactionSave_handler($sender, $args) {
+        $discussionID = false;
         // Can a DiscussionID be found for this item?
-        if ($Args['ParentType'] == 'discussion') {
-            $DiscussionID = $Args['ParentID'];
-        } elseif ($Args['ParentType'] == 'comment') {
-            $DiscussionID = Gdn::SQL()
-                ->GetWhere('Comment', array('CommentID' => $Args['ParentID']))
-                ->FirstRow()
+        if ($args['ParentType'] == 'discussion') {
+            $discussionID = $args['ParentID'];
+        } elseif ($args['ParentType'] == 'comment') {
+            $discussionID = Gdn::sql()
+                ->getWhere('Comment', array('CommentID' => $args['ParentID']))
+                ->firstRow()
                 ->DiscussionID;
         } else return;
 
         // Does this action change the reaction count for this item?
-        if ($Args['Exists'] === false) {
-            $IncDec = ' - 1';
-        } elseif (!$this->CurrentReaction) {
-            $IncDec = ' + 1';
+        if ($args['Exists'] === false) {
+            $incDec = ' - 1';
+        } elseif (!$this->currentReaction) {
+            $incDec = ' + 1';
         } else return;
 
         // Update the count in the discussion table.
-        Gdn::SQL()
-            ->Update('Discussion')
-            ->Set('CountReactions', 'CountReactions'.$IncDec, false)
-            ->Where('DiscussionID', $DiscussionID)
-            ->Put();
+        Gdn::sql()
+            ->update('Discussion')
+            ->set('CountReactions', 'CountReactions'.$incDec, false)
+            ->where('DiscussionID', $discussionID)
+            ->put();
     }
 
     // Register a dba/counts handler.
-    public function DbaController_CountJobs_Handler($Sender) {
-        $Sender->Data['Jobs']['Recalculate Discussion.CountReactions'] = '/plugin/YagaDRCounts.json';
+    public function dbaController_countJobs_handler($sender) {
+        $sender->Data['Jobs']['Recalculate Discussion.CountReactions'] = '/plugin/yagadrcounts.json';
     }
 
     // Recalculate reaction counts for all discussions.
-    public function PluginController_YagaDRCounts_Create($Sender) {
-        $Sender->Permission('Garden.Settings.Manage');
+    public function pluginController_yagaDRCounts_create($sender) {
+        $sender->permission('Garden.Settings.Manage');
 
-        $Database = Gdn::Database();
-        $Prefix = $Database->DatabasePrefix;
+        $database = Gdn::Database();
+        $px = $database->DatabasePrefix;
 
-        $Database->Query(
-            "update {$Prefix}Discussion p set p.CountReactions =
+        $database->Query(
+            "update {$px}Discussion p set p.CountReactions =
               (select count(c.ReactionID)
-                from {$Prefix}Reaction c
+                from {$px}Reaction c
                 where (p.DiscussionID = c.ParentID and c.ParentType = 'discussion')
               ) +
               (select count(c.ReactionID)
-                from {$Prefix}Reaction c
-                left join {$Prefix}Comment j on (c.ParentType = 'comment' and j.CommentID = c.ParentID)
-                where (p.DiscussionID = j.DiscussionID and c.ParentType = 'comment')
+                from {$px}Reaction c
+                left join {$px}Comment j on (c.ParentType = 'comment' and j.CommentID = c.ParentID)
+                where p.DiscussionID = j.DiscussionID
               )"
         );
 
-        $Sender->SetData('Result', array('Complete' => true));
-        $Sender->RenderData();
+        $sender->setData('Result', array('Complete' => true));
+        $sender->renderData();
     }
 
     // Create a new column to save the counts
-    public function Structure() {
-        GDN::Structure()->Table('Discussion')
-            ->Column('CountReactions', 'int(11)', 0)
-            ->Set();
+    public function structure() {
+        GDN::structure()->table('Discussion')
+            ->column('CountReactions', 'int(11)', 0)
+            ->set();
     }
 
-    public function Setup() {
-        $this->Structure();
+    public function setup() {
+        $this->structure();
     }
 
 }
