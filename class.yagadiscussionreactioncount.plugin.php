@@ -13,8 +13,6 @@ $PluginInfo['YagaDiscussionReactionCount'] = array(
 
 class YagaDiscussionReactionCount extends Gdn_Plugin {
 
-    private $currentReaction;
-
     // If there are reactions, add the count to the DiscussionMeta everywhere.
     public function base_beforeDiscussionMeta_handler($sender, $args) {
         $countReactions = $args['Discussion']->CountReactions;
@@ -29,15 +27,6 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
         }
     }
 
-    // Hacky way to get the previous reaction to determine later if the count has to change.
-    public function reactController_initialize_handler($sender) {
-        $args = explode('/', trim($sender->SelfUrl, '/'));
-        if (count($args) > 3) {
-            $args = array_slice($args, -3);
-            $this->currentReaction = $sender->ReactionModel->getByUser($args[1], $args[0], Gdn::session()->UserID);
-        }
-    }
-
     // Count when a reaction is saved.
     public function reactionModel_afterReactionSave_handler($sender, $args) {
         $discussionID = false;
@@ -45,16 +34,13 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
         if ($args['ParentType'] == 'discussion') {
             $discussionID = $args['ParentID'];
         } elseif ($args['ParentType'] == 'comment') {
-            $discussionID = Gdn::sql()
-                ->getWhere('Comment', array('CommentID' => $args['ParentID']))
-                ->firstRow()
-                ->DiscussionID;
+            $discussionID = val('DiscussionID', getRecord('comment', $args['ParentID']));
         } else return;
 
         // Does this action change the reaction count for this item?
         if ($args['Exists'] === false) {
             $incDec = ' - 1';
-        } elseif (!$this->currentReaction) {
+        } elseif (!$args['CurrentReaction']) {
             $incDec = ' + 1';
         } else return;
 
