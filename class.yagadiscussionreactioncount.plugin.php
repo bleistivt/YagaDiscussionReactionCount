@@ -101,7 +101,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
             );
         } else {
             // Slow fallback in case we can't create tables in memory.
-                $database->Query(
+            $database->Query(
                 "update {$px}Discussion p set p.CountReactions = (
                     select count(c.ReactionID)
                     from {$px}Reaction c
