@@ -64,18 +64,45 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
         $database = Gdn::Database();
         $px = $database->DatabasePrefix;
 
-        $database->Query(
-            "update {$px}Discussion p set p.CountReactions =
-              (select count(c.ReactionID)
-                from {$px}Reaction c
-                where (p.DiscussionID = c.ParentID and c.ParentType = 'discussion')
-              ) +
-              (select count(c.ReactionID)
-                from {$px}Reaction c
-                left join {$px}Comment j on (c.ParentType = 'comment' and j.CommentID = c.ParentID)
-                where p.DiscussionID = j.DiscussionID
-              )"
-        );
+        if (Gdn::structure()->hasEngine('memory')) {
+            $database->query(
+                "create temporary table {$px}CommentReactionCounts ENGINE=MEMORY as (
+                    select c.DiscussionID, (
+                    select count(r.ReactionID)
+                    from {$px}Reaction r
+                    where r.ParentType = 'comment' and c.CommentID = r.ParentID
+                  ) as CountReactions from {$px}Comment c having CountReactions <> 0
+                )"
+            );
+            $database->query(
+                "update {$px}Discussion d set d.CountReactions =  (
+                    select count(r.ReactionID)
+                    from {$px}Reaction r
+                    where r.ParentType = 'discussion' and  d.DiscussionID = r.ParentID
+                )"
+            );
+            $database->query(
+                "update {$px}Discussion d set d.CountReactions = d.CountReactions + ifnull((
+                    select sum(c.CountReactions)
+                    from {$px}CommentReactionCounts c
+                    where c.DiscussionID = d.DiscussionID
+                ), 0)"
+            );
+        } else {
+            // Slow fallback in case we can't create tables in memory.
+                $database->Query(
+                "update {$px}Discussion p set p.CountReactions = (
+                    select count(c.ReactionID)
+                    from {$px}Reaction c
+                    where (p.DiscussionID = c.ParentID and c.ParentType = 'discussion')
+                ) + (
+                    select count(c.ReactionID)
+                    from {$px}Reaction c
+                    left join {$px}Comment j on (c.ParentType = 'comment' and j.CommentID = c.ParentID)
+                    where p.DiscussionID = j.DiscussionID
+                )"
+            );
+        }
 
         $sender->setData('Result', array('Complete' => true));
         $sender->renderData();
