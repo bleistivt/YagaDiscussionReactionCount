@@ -11,7 +11,7 @@ $PluginInfo['YagaDiscussionReactionCount'] = array(
     'License' => 'GNU GPL2'
 );
 
-class YagaDiscussionReactionCount extends Gdn_Plugin {
+class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
 
     // If there are reactions, add the count to the DiscussionMeta everywhere.
     public function base_beforeDiscussionMeta_handler($sender, $args) {
@@ -27,6 +27,7 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
         }
     }
 
+
     // Count when a reaction is saved.
     public function reactionModel_afterReactionSave_handler($sender, $args) {
         $discussionID = false;
@@ -35,7 +36,7 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
             $discussionID = $args['ParentID'];
         } elseif ($args['ParentType'] == 'comment') {
             $discussionID = val('DiscussionID', getRecord('comment', $args['ParentID']));
-        } else return;
+        }
 
         // Does this action change the reaction count for this item?
         if ($args['Exists'] === false) {
@@ -44,6 +45,13 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
             $incDec = ' + 1';
         } else return;
 
+        Gdn::sql()
+            ->update('User')
+            ->set('CountReactions', 'CountReactions'.$incDec, false)
+            ->where('UserID', $args['ParentUserID'])
+            ->put();
+
+        if (!$discussionID) return;
         // Update the count in the discussion table.
         Gdn::sql()
             ->update('Discussion')
@@ -52,16 +60,19 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
             ->put();
     }
 
-    // Register a dba/counts handler.
+
+    // Register the dba/counts handlers.
     public function dbaController_countJobs_handler($sender) {
         $sender->Data['Jobs']['Recalculate Discussion.CountReactions'] = '/plugin/yagadrcounts.json';
+        $sender->Data['Jobs']['Recalculate User.CountReactions'] = '/plugin/yagaurcounts.json';
     }
 
-    // Recalculate reaction counts for all discussions.
-    public function pluginController_yagaDRCounts_create($sender) {
+
+    // Recalculate reaction counts for all discussions (including comments).
+    public function pluginController_yagaDRcounts_create($sender) {
         $sender->permission('Garden.Settings.Manage');
 
-        $database = Gdn::Database();
+        $database = Gdn::database();
         $px = $database->DatabasePrefix;
 
         if (Gdn::structure()->hasEngine('memory')) {
@@ -108,12 +119,33 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
         $sender->renderData();
     }
 
-    // Create a new column to save the counts
+
+    // Recalculate user reaction counts.
+    public function pluginController_yagaURcounts_create($sender) {
+        $sender->permission('Garden.Settings.Manage');
+        Gdn::database()->query(DBAModel::getCountSql(
+            'count',
+            'User', 'Reaction',
+            'CountReactions', 'ReactionID',
+            'UserID', 'ParentAuthorID'
+        ));
+        $sender->setData('Result', array('Complete' => true));
+        $sender->renderData();
+    }
+
+
+    // Create new columns to save the counts.
     public function structure() {
-        GDN::structure()->table('Discussion')
+        $structure = Gdn::structure();
+
+        $structure->table('Discussion')
+            ->column('CountReactions', 'int(11)', 0)
+            ->set();
+        $structure->table('User')
             ->column('CountReactions', 'int(11)', 0)
             ->set();
     }
+
 
     public function setup() {
         $this->structure();
