@@ -75,10 +75,10 @@ class YagaDiscussionReactionCount extends Gdn_Plugin {
                 )"
             );
             $database->query(
-                "update {$px}Discussion d set d.CountReactions =  (
+                "update {$px}Discussion d set d.CountReactions = (
                     select count(r.ReactionID)
                     from {$px}Reaction r
-                    where r.ParentType = 'discussion' and  d.DiscussionID = r.ParentID
+                    where r.ParentType = 'discussion' and d.DiscussionID = r.ParentID
                 )"
             );
             $database->query(
