@@ -3,7 +3,7 @@
 $PluginInfo['YagaDiscussionReactionCount'] = array(
     'Name' => 'Yaga Discussion Reaction Count',
     'Description' => 'Displays the total number of reactions of a discussion in the discussion meta. Run dba/counts after enabling if you already have reaction records.',
-    'Version' => '0.1',
+    'Version' => '0.2',
     'RequiredApplications' => array('Yaga' => '1.0'),
     'MobileFriendly' => true,
     'Author' => 'Bleistivt',
