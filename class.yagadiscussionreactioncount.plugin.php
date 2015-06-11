@@ -18,7 +18,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
         $countReactions = $args['Discussion']->CountReactions;
 
         if (C('Yaga.Reactions.Enabled') && $countReactions) {
-            $number = bigPlural($countReactions, T('%s reaction'));
+            $number = bigPlural($countReactions, T('%s reaction'), T('%s reactions'));
             echo wrap(
                 sprintf(pluralTranslate($countReactions, T('%s reaction'), T('%s reactions')), $number),
                 'span',
