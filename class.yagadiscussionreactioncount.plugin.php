@@ -35,7 +35,10 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
         if ($args['ParentType'] == 'discussion') {
             $discussionID = $args['ParentID'];
         } elseif ($args['ParentType'] == 'comment') {
-            $discussionID = val('DiscussionID', getRecord('comment', $args['ParentID']));
+            $record = Gdn::sql()
+                ->getWhere('Comment', ['CommentID' => $args['ParentID']])
+                ->firstRow(DATASET_TYPE_ARRAY);
+            $discussionID = val('DiscussionID', $record);
         }
 
         // Does this action change the reaction count for this item?
