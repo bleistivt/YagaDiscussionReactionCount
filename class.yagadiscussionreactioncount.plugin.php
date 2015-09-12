@@ -1,15 +1,15 @@
 <?php
 
-$PluginInfo['YagaDiscussionReactionCount'] = array(
+$PluginInfo['YagaDiscussionReactionCount'] = [
     'Name' => 'Yaga Discussion Reaction Count',
     'Description' => 'Displays the total number of reactions of a discussion in the discussion meta. Run dba/counts after enabling if you already have reaction records.',
     'Version' => '0.2',
-    'RequiredApplications' => array('Yaga' => '1.0'),
+    'RequiredApplications' => ['Yaga' => '1.0'],
     'MobileFriendly' => true,
     'Author' => 'Bleistivt',
     'AuthorUrl' => 'http://bleistivt.net',
     'License' => 'GNU GPL2'
-);
+];
 
 class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
 
@@ -22,7 +22,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
             echo wrap(
                 sprintf(pluralTranslate($countReactions, T('%s reaction'), T('%s reactions')), $number),
                 'span',
-                array('class' => 'MItem MCount ReactionCount')
+                ['class' => 'MItem MCount ReactionCount']
             );
         }
     }
@@ -118,7 +118,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
             );
         }
 
-        $sender->setData('Result', array('Complete' => true));
+        $sender->setData('Result', ['Complete' => true]);
         $sender->renderData();
     }
 
@@ -132,7 +132,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
             'CountReactions', 'ReactionID',
             'UserID', 'ParentAuthorID'
         ));
-        $sender->setData('Result', array('Complete' => true));
+        $sender->setData('Result', ['Complete' => true]);
         $sender->renderData();
     }
 
