@@ -72,53 +72,43 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
 
 
     // Recalculate reaction counts for all discussions (including comments).
-    public function pluginController_yagaDRcounts_create($sender) {
+    public function pluginController_yagaDRcounts_create($sender, $from = false, $to = false) {
         $sender->permission('Garden.Settings.Manage');
 
-        $database = Gdn::database();
-        $px = $database->DatabasePrefix;
-
-        if (Gdn::structure()->hasEngine('memory')) {
-            $database->query(
-                "create temporary table {$px}CommentReactionCounts ENGINE=MEMORY as (
-                    select c.DiscussionID, (
-                    select count(r.ReactionID)
-                    from {$px}Reaction r
-                    where r.ParentType = 'comment' and c.CommentID = r.ParentID
-                  ) as CountReactions from {$px}Comment c having CountReactions <> 0
-                )"
-            );
-            $database->query(
-                "update {$px}Discussion d set d.CountReactions = (
-                    select count(r.ReactionID)
-                    from {$px}Reaction r
-                    where r.ParentType = 'discussion' and d.DiscussionID = r.ParentID
-                )"
-            );
-            $database->query(
-                "update {$px}Discussion d set d.CountReactions = d.CountReactions + ifnull((
-                    select sum(c.CountReactions)
-                    from {$px}CommentReactionCounts c
-                    where c.DiscussionID = d.DiscussionID
-                ), 0)"
-            );
-        } else {
-            // Slow fallback in case we can't create tables in memory.
-            $database->Query(
-                "update {$px}Discussion p set p.CountReactions = (
-                    select count(c.ReactionID)
-                    from {$px}Reaction c
-                    where (p.DiscussionID = c.ParentID and c.ParentType = 'discussion')
-                ) + (
-                    select count(c.ReactionID)
-                    from {$px}Reaction c
-                    left join {$px}Comment j on (c.ParentType = 'comment' and j.CommentID = c.ParentID)
-                    where p.DiscussionID = j.DiscussionID
-                )"
-            );
+        list($min, $max) = (new DBAModel())->primaryKeyRange('Discussion');
+        if (!$from) {
+            $from = $min;
+            $to = $min + DBAModel::$ChunkSize - 1;
         }
+        $from = (int)$from;
+        $to = (int)$to;
 
-        $sender->setData('Result', ['Complete' => true]);
+        $database = Gdn::database(); 
+        $px = $database->DatabasePrefix; 
+
+        $database->query("
+            update {$px}Discussion p
+            where (p.DiscussionID >= {$from} and d.DiscussionID <= {$to})
+            set p.CountReactions = (
+                select count(c.ReactionID) 
+                from {$px}Reaction c 
+                where (p.DiscussionID = c.ParentID and c.ParentType = 'discussion') 
+            ) + ( 
+                select count(c.ReactionID) 
+                from {$px}Reaction c 
+                left join {$px}Comment j on j.CommentID = c.ParentID
+                where (p.DiscussionID = j.DiscussionID and c.ParentType = 'comment')
+            )
+        ");
+
+        $sender->setData('Result', [
+            'Complete' => $to >= $max,
+            'Percent' => min(round($to * 100 / $max), 100).'%',
+            'Args' => [
+                'from' => $to + 1,
+                'to' => $from + DBAModel::$ChunkSize
+            ]
+        ]);
         $sender->renderData();
     }
 
