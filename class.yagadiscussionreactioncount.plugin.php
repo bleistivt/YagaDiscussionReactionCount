@@ -66,7 +66,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
 
     // Register the dba/counts handlers.
     public function dbaController_countJobs_handler($sender) {
-        $sender->Data['Jobs']['Recalculate Discussion.CountReactions'] = '/plugin/yagadrcounts.json';
+        $sender->Data['Jobs']['Recalculate Discussion.CountReactions'] = '/plugin/yagadrcounts.json?';
         $sender->Data['Jobs']['Recalculate User.CountReactions'] = '/plugin/yagaurcounts.json';
     }
 
@@ -75,10 +75,12 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
     public function pluginController_yagaDRcounts_create($sender, $from = false, $to = false) {
         $sender->permission('Garden.Settings.Manage');
 
+        $chunk = 500;
+
         list($min, $max) = (new DBAModel())->primaryKeyRange('Discussion');
         if (!$from) {
             $from = $min;
-            $to = $min + DBAModel::$ChunkSize - 1;
+            $to = $min + $chunk - 1;
         }
         $from = (int)$from;
         $to = (int)$to;
@@ -88,7 +90,6 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
 
         $database->query("
             update {$px}Discussion p
-            where (p.DiscussionID >= {$from} and d.DiscussionID <= {$to})
             set p.CountReactions = (
                 select count(c.ReactionID) 
                 from {$px}Reaction c 
@@ -99,6 +100,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
                 left join {$px}Comment j on j.CommentID = c.ParentID
                 where (p.DiscussionID = j.DiscussionID and c.ParentType = 'comment')
             )
+            where (p.DiscussionID >= {$from} and p.DiscussionID <= {$to})
         ");
 
         $sender->setData('Result', [
@@ -106,7 +108,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
             'Percent' => min(round($to * 100 / $max), 100).'%',
             'Args' => [
                 'from' => $to + 1,
-                'to' => $from + DBAModel::$ChunkSize
+                'to' => $to + $chunk
             ]
         ]);
         $sender->renderData();
