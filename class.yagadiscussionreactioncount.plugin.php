@@ -1,16 +1,5 @@
 <?php
 
-$PluginInfo['YagaDiscussionReactionCount'] = [
-    'Name' => 'Yaga Discussion Reaction Count',
-    'Description' => 'Displays the total number of reactions of a discussion in the discussion meta. Run dba/counts after enabling if you already have reaction records.',
-    'Version' => '0.2',
-    'RequiredApplications' => ['Yaga' => '1.0'],
-    'MobileFriendly' => true,
-    'Author' => 'Bleistivt',
-    'AuthorUrl' => 'http://bleistivt.net',
-    'License' => 'GNU GPL2'
-];
-
 class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
 
     // If there are reactions, add the count to the DiscussionMeta everywhere.
