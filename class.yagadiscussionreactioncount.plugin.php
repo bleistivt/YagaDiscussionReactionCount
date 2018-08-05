@@ -27,7 +27,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
             $record = Gdn::sql()
                 ->getWhere('Comment', ['CommentID' => $args['ParentID']])
                 ->firstRow(DATASET_TYPE_ARRAY);
-            $discussionID = val('DiscussionID', $record);
+            $discussionID = $record['DiscussionID'] ?? false;
         }
 
         // Does this action change the reaction count for this item?
