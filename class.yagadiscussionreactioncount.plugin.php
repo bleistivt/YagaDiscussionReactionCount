@@ -64,7 +64,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
     public function pluginController_yagaDRcounts_create($sender, $from = false, $to = false) {
         $sender->permission('Garden.Settings.Manage');
 
-        $chunk = 500;
+        $chunk = DBAModel::$ChunkSize;
 
         list($min, $max) = (new DBAModel())->primaryKeyRange('Discussion');
         if (!$from) {
