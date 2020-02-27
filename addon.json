@@ -1,7 +1,7 @@
 {
     "name": "Yaga Discussion Reaction Count",
     "description": "Displays the total number of reactions of a discussion in the discussion meta. Run dba/counts after enabling if you already have reaction records.",
-    "version": "0.3",
+    "version": "0.4",
     "mobileFriendly": true,
     "license": "GNU GPL2",
     "gitHub": "bleistivt/YagaDiscussionReactionCount",

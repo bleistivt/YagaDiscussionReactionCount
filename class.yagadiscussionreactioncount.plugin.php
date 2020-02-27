@@ -81,11 +81,11 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
             update {$px}Discussion p
             set p.CountReactions = (
                 select count(c.ReactionID) 
-                from {$px}Reaction c 
+                from {$px}YagaReaction c 
                 where (p.DiscussionID = c.ParentID and c.ParentType = 'discussion') 
             ) + ( 
                 select count(c.ReactionID) 
-                from {$px}Reaction c 
+                from {$px}YagaReaction c 
                 left join {$px}Comment j on j.CommentID = c.ParentID
                 where (p.DiscussionID = j.DiscussionID and c.ParentType = 'comment')
             )
@@ -109,7 +109,7 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
         $sender->permission('Garden.Settings.Manage');
         Gdn::database()->query(DBAModel::getCountSql(
             'count',
-            'User', 'Reaction',
+            'User', 'YagaReaction',
             'CountReactions', 'ReactionID',
             'UserID', 'ParentAuthorID'
         ));
