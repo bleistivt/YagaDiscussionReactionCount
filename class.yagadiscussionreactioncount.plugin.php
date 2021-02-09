@@ -6,10 +6,10 @@ class YagaDiscussionReactionCountPlugin extends Gdn_Plugin {
     public function base_beforeDiscussionMeta_handler($sender, $args) {
         $countReactions = $args['Discussion']->CountReactions;
 
-        if (C('Yaga.Reactions.Enabled') && $countReactions) {
-            $number = bigPlural($countReactions, T('%s reaction'), T('%s reactions'));
+        if (Gdn::config('Yaga.Reactions.Enabled') && $countReactions) {
+            $number = bigPlural($countReactions, Gdn::translate('%s reaction'), Gdn::translate('%s reactions'));
             echo wrap(
-                sprintf(pluralTranslate($countReactions, T('%s reaction'), T('%s reactions')), $number),
+                sprintf(pluralTranslate($countReactions, Gdn::translate('%s reaction'), Gdn::translate('%s reactions')), $number),
                 'span',
                 ['class' => 'MItem MCount ReactionCount']
             );
